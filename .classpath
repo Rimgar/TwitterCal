@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="scribe-java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/Julian/workspace/TwitterCal/lib/Twitter/twitter4j-core-2.2.6.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/Julian/workspace/TwitterCal/lib/Twitter/twitter4j-core-2.2.6-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Julian/workspace/TwitterCal/lib/apache-commons-codec-1.7/commons-codec-1.7.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/Julian/workspace/TwitterCal/lib/apache-commons-codec-1.7/commons-codec-1.7-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Julian/workspace/TwitterCal/lib/fastjson-1.1.22.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

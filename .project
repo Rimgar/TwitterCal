@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>scribe-java</name>
+			<type>2</type>
+			<location>C:/Users/Julian/workspace/TwitterCal/lib/Scribe/src/main/java</location>
+		</link>
+	</linkedResources>
 </projectDescription>
