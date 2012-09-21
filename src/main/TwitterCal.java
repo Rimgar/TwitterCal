@@ -49,45 +49,18 @@ public class TwitterCal {
 //		prop.list(System.out);
 //		prop.store(new FileOutputStream("settings.properties"), "");
 		prop.load(new FileInputStream("settings.properties"));
-		AccessToken accessToken = new AccessToken(prop.getProperty("twitter.accessToken"), prop.getProperty("twitter.accessTokenSecret"));
-		twitter = new TwitterFactory().getInstance();
-		twitter.setOAuthConsumer(prop.getProperty("twitter.consumerKey"), prop.getProperty("twitter.consumerSecret"));
-		twitter.setOAuthAccessToken(accessToken);
+//		AccessToken accessToken = new AccessToken(prop.getProperty("twitter.accessToken"), prop.getProperty("twitter.accessTokenSecret"));
+//		twitter = new TwitterFactory().getInstance();
+//		twitter.setOAuthConsumer(prop.getProperty("twitter.consumerKey"), prop.getProperty("twitter.consumerSecret"));
+//		twitter.setOAuthAccessToken(accessToken);
 //		sendTimeTweet();
 //		getTimeline();
 //		getDMs();
 //		sendTimeDM();
 		
 		GoogleCalendar cal = new GoogleCalendar(prop);
-		System.out.println(cal.getTodaysBirthdays().substring(0, 4));
-		System.out.println(cal.getNextNBirthdays(2));
-		
-//		Date date = new Date();
-//		System.out.println(date);
-//		System.out.println(new GregorianCalendar().get(Calendar.MONTH)+1);
-	}
-
-	
-	private static void sendTimeTweet() throws TwitterException {
-		twitter.updateStatus("@Rimgar_ Time: " + new Time(System.currentTimeMillis()).toGMTString());
-	}
-	
-	private static void sendTimeDM() throws TwitterException {
-		twitter.sendDirectMessage("rimgar_", "Time: " + new Time(System.currentTimeMillis()).toGMTString());
-	}
-	
-	private static void getTimeline() throws TwitterException {
-		List<Status> statuses = twitter.getHomeTimeline();
-		for (Status status : statuses) {
-			System.out.println(status.getUser().getScreenName() + ": " + status.getText());
-		}
-	}
-	
-	private static void getDMs() throws TwitterException {
-		List<DirectMessage> dms = twitter.getDirectMessages();
-		for (DirectMessage dm : dms) {
-			System.out.println(dm.getSender().getScreenName() + ": " + dm.getText());
-		}
+		System.out.println(cal.getTodaysEvents());
+//		System.out.println(cal.getNextNEvents(5));
 	}
 
 }

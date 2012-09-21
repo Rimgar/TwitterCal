@@ -3,6 +3,7 @@
  */
 package main;
 
+import java.util.Calendar;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -14,6 +15,12 @@ import org.scribe.model.Token;
 import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
+
+import twitter4j.TwitterException;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * @author Julian Kuerby
@@ -39,24 +46,39 @@ public class GoogleCalendar {
 		accessToken = new Token(prop.getProperty("google.accessToken"), prop.getProperty("google.accessTokenSecret"));
 	}
 	
-	public String getTodaysBirthdays() {
+	public int getTodaysEvents() {
 		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID + "/events");
 		request.addQuerystringParameter("orderBy", "startTime");
 		request.addQuerystringParameter("singleEvents", "true");
-		request.addQuerystringParameter("timeMin", "2012-09-21T00:00:00Z");
-		request.addQuerystringParameter("timeMax", "2012-09-22T00:00:00Z");
+		RFC3339Calendar cal = new RFC3339Calendar();
+		request.addQuerystringParameter("timeMin", cal.getDate());
+		cal.add(Calendar.DAY_OF_MONTH, 1);
+		request.addQuerystringParameter("timeMax", cal.getDate());
 		service.signRequest(accessToken, request);
 		request.addHeader("GData-Version", "3.0");
 		Response response = request.send();
 		
-		return response.getCode() + "\n" + response.getBody();
+		if(response.getCode() == 200) {
+			JSONArray arr = parseJsonString(response.getBody());
+			Twitter twitter = new Twitter(prop);
+			for(int i = 0; i < arr.size(); i++) {
+				try {
+					twitter.sendMention("Today: " + arr.getJSONObject(i).getString("summary"));
+				} catch (NumberFormatException | TwitterException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		return response.getCode();
 	}
 	
-	public String getNextNBirthdays(int n) {
+	public String getNextNEvents(int n) {
 		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID + "/events");
 		request.addQuerystringParameter("orderBy", "startTime");
 		request.addQuerystringParameter("singleEvents", "true");
-		request.addQuerystringParameter("timeMin", "2012-09-21T00:00:00Z");
+		RFC3339Calendar cal = new RFC3339Calendar();
+		request.addQuerystringParameter("timeMin", cal.getDate());
 		request.addQuerystringParameter("maxResults", "" + n);
 		service.signRequest(accessToken, request);
 		request.addHeader("GData-Version", "3.0");
@@ -65,18 +87,17 @@ public class GoogleCalendar {
 		return response.getCode() + "\n" + response.getBody();
 	}
 	
-	public void scribeGoogleInstalledExistingAccessToken() {
-		
-		System.out.println("Now we're going to access a protected resource...");
-		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID);
-		service.signRequest(accessToken, request);
-		request.addHeader("GData-Version", "3.0");
-		Response response = request.send();
-		System.out.println("Got it! Lets see what we found...");
-		System.out.println();
-		System.out.println(response.getCode());
-		System.out.println(response.getBody());
+	public JSONArray parseJsonString(String json) {
+		JSONObject obj = JSON.parseObject(json);
+//		System.out.println(obj.getString("summary"));
+		JSONArray arr = obj.getJSONArray("items");
+//		obj = arr.getJSONObject(0);
+//		System.out.println(obj.getString("summary"));
+//		System.out.println(obj.getJSONObject("start").getString("date"));
+//		obj.getTimestamp("updated");
+		return arr;
 	}
+	
 	
 //	public static void scribeGoogleInstalled() {
 //		OAuthService service = new ServiceBuilder().provider(GoogleApi.class)
