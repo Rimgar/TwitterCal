@@ -44,6 +44,7 @@ public class GoogleCalendar {
 	}
 	
 	public JSONArray getEventsOnDate(RFC3339Calendar cal) {
+		cal = (RFC3339Calendar) cal.clone();
 		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID + "/events");
 		request.addQuerystringParameter("orderBy", "startTime");
 		request.addQuerystringParameter("singleEvents", "true");
@@ -62,7 +63,7 @@ public class GoogleCalendar {
 	}
 	
 	public JSONArray getTodaysEvents() {
-		return getEventsOnDate(new RFC3339Calendar());
+		return getEventsOnDate(TwitterCal.now);
 	}
 	
 	public JSONArray getNextEvents() {

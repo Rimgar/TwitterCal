@@ -4,6 +4,7 @@
 package main;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
@@ -59,6 +60,11 @@ public class TwitterCal {
 		cal = new GoogleCalendar(prop);
 		
 		processMentions();
+		
+		if(! now.getDate().equals(prop.getProperty("now"))) {
+			today(null);
+		}
+		prop.store(new FileOutputStream(propertiesPath), "");
 	}
 	
 	public static void processMentions() throws TwitterException, IOException {
@@ -73,7 +79,7 @@ public class TwitterCal {
 				String[] words = status.getText().split(" ");
 				if(words.length > 1) {
 					if(words[1].equals("today")) {
-						
+						today(status);
 					} else if(words[1].equals("next")) {
 						
 					} else if(words[1].equals("on")) {
@@ -87,6 +93,13 @@ public class TwitterCal {
 				}
 			}
 		}
+		prop.store(new FileOutputStream(propertiesPath), "");
+	}
+	
+	public static void today(Status inReplyTo) throws NumberFormatException, TwitterException {
+		JSONArray arr = cal.getTodaysEvents();
+		buildTweets("Today:", arr, inReplyTo);
+		prop.setProperty("now", now.getDate());
 	}
 	
 	public static void buildTweets(String prefix, JSONArray arr, Status inReplyTo) throws NumberFormatException, TwitterException {
