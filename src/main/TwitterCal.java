@@ -4,29 +4,14 @@
 package main;
 
 import java.io.FileInputStream;
-import java.sql.Time;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
-import java.util.Scanner;
 
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.GoogleApi;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
+import com.alibaba.fastjson.JSONArray;
 
-import twitter4j.DirectMessage;
 import twitter4j.Status;
-import twitter4j.Twitter;
 import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.auth.AccessToken;
 
 /**
  * @author Julian Kuerby
@@ -34,33 +19,103 @@ import twitter4j.auth.AccessToken;
  */
 public class TwitterCal {
 	
+	private static final String propertiesPath = "settings.properties";
+	
 	private static Twitter twitter;
+	private static GoogleCalendar cal;
+	private static Properties prop;
+	public static RFC3339Calendar now;
 
 	/**
 	 * @param args
 	 * @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
-		Properties prop = new Properties();
+		now = new RFC3339Calendar();
+		prop = new Properties();
 //		prop.setProperty("TConsumerKey", "1234");
 //		prop.setProperty("TConsumerSecret", "3456");
 //		prop.setProperty("TAccessToken", "5678");
 //		prop.setProperty("TAccessTokenSecret", "7890");
 //		prop.list(System.out);
 //		prop.store(new FileOutputStream("settings.properties"), "");
-		prop.load(new FileInputStream("settings.properties"));
-//		AccessToken accessToken = new AccessToken(prop.getProperty("twitter.accessToken"), prop.getProperty("twitter.accessTokenSecret"));
-//		twitter = new TwitterFactory().getInstance();
-//		twitter.setOAuthConsumer(prop.getProperty("twitter.consumerKey"), prop.getProperty("twitter.consumerSecret"));
-//		twitter.setOAuthAccessToken(accessToken);
-//		sendTimeTweet();
-//		getTimeline();
-//		getDMs();
-//		sendTimeDM();
+		prop.load(new FileInputStream(propertiesPath));
+
 		
-		GoogleCalendar cal = new GoogleCalendar(prop);
-		System.out.println(cal.getTodaysEvents());
-//		System.out.println(cal.getNextNEvents(5));
+		
+//		JSONArray arr = cal.getTodaysEvents();
+//		if(arr != null) {
+//			Twitter twitter = new Twitter(prop);
+//			for(int i = 0; i < arr.size(); i++) {
+//				try {
+//					twitter.sendMention("Today: " + arr.getJSONObject(i).getString("summary"));
+//				} catch (NumberFormatException | TwitterException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+		twitter = new Twitter(prop);
+		cal = new GoogleCalendar(prop);
+		
+		processMentions();
+	}
+	
+	public static void processMentions() throws TwitterException, IOException {
+		List<Status> mentions = twitter.getMentions();
+//		prop.setProperty("twitter.readMentionsId", mentions.get(0).getId() + "");
+//		prop.store(new FileOutputStream(propertiesPath), "");
+		
+		for (int i = mentions.size() - 1; i >= 0; i--) {
+			Status status = mentions.get(i);
+			long authUserId = Long.parseLong(prop.getProperty("twitter.user"));
+			if(status.getUser().getId() == authUserId && status.getText().startsWith("@" + twitter.getTwitter().getScreenName() + " ")) {
+				String[] words = status.getText().split(" ");
+				if(words.length > 1) {
+					if(words[1].equals("today")) {
+						
+					} else if(words[1].equals("next")) {
+						
+					} else if(words[1].equals("on")) {
+						JSONArray arr = cal.getEventsOnDate(RFC3339Calendar.parseDate(words[2]));
+						buildTweets(words[2] + ":", arr, status);
+					} else if(words[1].equals("after")) {
+						
+					} else if(words[1].equals("when")) {
+						
+					}
+				}
+			}
+		}
+	}
+	
+	public static void buildTweets(String prefix, JSONArray arr, Status inReplyTo) throws NumberFormatException, TwitterException {
+		int fixSize = twitter.getTwitter().showUser(Long.parseLong(prop.getProperty("twitter.user"))).getScreenName().length() + 2
+		            + prefix.length() + 13;
+		int remaining = 140 - fixSize;
+		String text = "";
+		for(int i = 0; i < arr.size(); i++) {
+			String act = arr.getJSONObject(i).getString("summary");
+			if(remaining - act.length() - 1 < 0) {
+				if(inReplyTo == null) {
+					twitter.sendMention(prefix + text + "\n(" + now.getTimeOfDay() + ")");
+				} else {
+					twitter.sendReply(inReplyTo, prefix + text + "\n(" + now.getTimeOfDay() + ")");
+				}
+				text = "";
+				remaining = 140 - fixSize;
+			}
+			text += " " + act;
+			remaining -= act.length() + 1;
+		}
+		
+		if(! text.equals("")) {
+			if(inReplyTo == null) {
+				twitter.sendMention(prefix + text + "\n(" + now.getTimeOfDay() + ")");
+			} else {
+				twitter.sendReply(inReplyTo, prefix + text + "\n(" + now.getTimeOfDay() + ")");
+			}
+		}
 	}
 
 }

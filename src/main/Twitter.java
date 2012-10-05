@@ -3,12 +3,13 @@
  */
 package main;
 
-import java.sql.Time;
 import java.util.List;
 import java.util.Properties;
 
 import twitter4j.DirectMessage;
+import twitter4j.Paging;
 import twitter4j.Status;
+import twitter4j.StatusUpdate;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
@@ -30,6 +31,10 @@ public class Twitter {
 		twitter.setOAuthAccessToken(accessToken);
 	}
 	
+	public twitter4j.Twitter getTwitter() {
+		return twitter;
+	}
+	
 	public void sendTweet(String message) throws TwitterException {
 		twitter.updateStatus(message);
 	}
@@ -42,12 +47,10 @@ public class Twitter {
 		sendTweet("@" + twitter.showUser(userID).getScreenName() + " " + message);
 	}
 	
-	public void sendTimeTweet() throws TwitterException {
-		twitter.updateStatus("@Rimgar_ Time: " + new Time(System.currentTimeMillis()).toGMTString());
-	}
-	
-	public void sendTimeDM() throws TwitterException {
-		twitter.sendDirectMessage("rimgar_", "Time: " + new Time(System.currentTimeMillis()).toGMTString());
+	public void sendReply(Status reply, String message) throws TwitterException {
+		StatusUpdate update = new StatusUpdate("@" + reply.getUser().getScreenName() + " " + message);
+		update.setInReplyToStatusId(reply.getId());
+		twitter.updateStatus(update);
 	}
 	
 	public void getTimeline() throws TwitterException {
@@ -57,11 +60,23 @@ public class Twitter {
 		}
 	}
 	
-	public void getDMs() throws TwitterException {
-		List<DirectMessage> dms = twitter.getDirectMessages();
-		for (DirectMessage dm : dms) {
-			System.out.println(dm.getSender().getScreenName() + ": " + dm.getText());
-		}
+	public List<Status> getMentions() throws TwitterException {
+		long mentionId = Long.parseLong(prop.getProperty("twitter.readMentionsId", "1"));
+		Paging page = new Paging(mentionId);
+		List<Status> mentions = twitter.getMentions(page);
+		
+		return mentions;
 	}
-
+	
+	public List<DirectMessage> getDMs() throws TwitterException {
+		long dmId = Long.parseLong(prop.getProperty("twitter.readDmId", "1"));
+		Paging page = new Paging(dmId);
+		List<DirectMessage> dms = twitter.getDirectMessages(page);
+		
+		return dms;
+//		for(DirectMessage dm : dms) {
+//			System.out.println(dm.getSender().getScreenName() + ": " + dm.getText() + "\n\t" + dm.getId());
+//		}
+	}
+	
 }
