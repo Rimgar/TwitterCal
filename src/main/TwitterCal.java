@@ -81,17 +81,20 @@ public class TwitterCal {
 					if(words[1].equals("today")) {
 						today(status);
 					} else if(words[1].equals("next")) {
-						
+						JSONArray arr = cal.getEventsAfter((RFC3339Calendar) now.clone());
+						buildTweets("", arr, status);
 					} else if(words[1].equals("on")) {
 						JSONArray arr = cal.getEventsOnDate(RFC3339Calendar.parseDate(words[2]));
 						buildTweets(words[2] + ":", arr, status);
 					} else if(words[1].equals("after")) {
-						
+						JSONArray arr = cal.getEventsAfter(RFC3339Calendar.parseDate(words[2]));
+						buildTweets("", arr, status);
 					} else if(words[1].equals("when")) {
 						
 					}
 				}
 			}
+			prop.setProperty("twitter.readMentionsId", status.getId() + "");
 		}
 		prop.store(new FileOutputStream(propertiesPath), "");
 	}
@@ -103,30 +106,37 @@ public class TwitterCal {
 	}
 	
 	public static void buildTweets(String prefix, JSONArray arr, Status inReplyTo) throws NumberFormatException, TwitterException {
-		int fixSize = twitter.getTwitter().showUser(Long.parseLong(prop.getProperty("twitter.user"))).getScreenName().length() + 2
-		            + prefix.length() + 13;
-		int remaining = 140 - fixSize;
-		String text = "";
-		for(int i = 0; i < arr.size(); i++) {
-			String act = arr.getJSONObject(i).getString("summary");
-			if(remaining - act.length() - 1 < 0) {
+		if(arr != null) {
+			int fixSize = twitter.getTwitter().showUser(Long.parseLong(prop.getProperty("twitter.user"))).getScreenName().length() + 2
+					    + prefix.length() + 13;
+			int remaining = 140 - fixSize;
+			String text = "";
+			for(int i = 0; i < arr.size(); i++) {
+				if(prefix.length() == 0) {
+					prefix = arr.getJSONObject(i).getJSONObject("start").getString("date") + ":";
+					fixSize += prefix.length();
+					remaining -= prefix.length();
+				}
+				String act = arr.getJSONObject(i).getString("summary");
+				if(remaining - act.length() - 1 < 0) {
+					if(inReplyTo == null) {
+						twitter.sendMention(prefix + text + "\n(" + now.getTimeOfDay() + ")");
+					} else {
+						twitter.sendReply(inReplyTo, prefix + text + "\n(" + now.getTimeOfDay() + ")");
+					}
+					text = "";
+					remaining = 140 - fixSize;
+				}
+				text += " " + act;
+				remaining -= act.length() + 1;
+			}
+
+			if(! text.equals("")) {
 				if(inReplyTo == null) {
 					twitter.sendMention(prefix + text + "\n(" + now.getTimeOfDay() + ")");
 				} else {
 					twitter.sendReply(inReplyTo, prefix + text + "\n(" + now.getTimeOfDay() + ")");
 				}
-				text = "";
-				remaining = 140 - fixSize;
-			}
-			text += " " + act;
-			remaining -= act.length() + 1;
-		}
-		
-		if(! text.equals("")) {
-			if(inReplyTo == null) {
-				twitter.sendMention(prefix + text + "\n(" + now.getTimeOfDay() + ")");
-			} else {
-				twitter.sendReply(inReplyTo, prefix + text + "\n(" + now.getTimeOfDay() + ")");
 			}
 		}
 	}

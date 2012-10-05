@@ -44,7 +44,6 @@ public class GoogleCalendar {
 	}
 	
 	public JSONArray getEventsOnDate(RFC3339Calendar cal) {
-		cal = (RFC3339Calendar) cal.clone();
 		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID + "/events");
 		request.addQuerystringParameter("orderBy", "startTime");
 		request.addQuerystringParameter("singleEvents", "true");
@@ -63,21 +62,21 @@ public class GoogleCalendar {
 	}
 	
 	public JSONArray getTodaysEvents() {
-		return getEventsOnDate(TwitterCal.now);
+		return getEventsOnDate((RFC3339Calendar) TwitterCal.now.clone());
 	}
 	
-	public JSONArray getNextEvents() {
-		JSONArray arr = getNextNEvents(1);
-		arr.getJSONObject(0);
-		//TODO
-		return arr;
+	public JSONArray getEventsAfter(RFC3339Calendar cal) {
+		JSONArray arr = getNEventsAfter(1, cal);
+		String date = arr.getJSONObject(0).getJSONObject("start").getString("date");
+		System.out.println(date);
+		return getEventsOnDate(RFC3339Calendar.parseDate(date));
 	}
 	
-	public JSONArray getNextNEvents(int n) {
+	public JSONArray getNEventsAfter(int n, RFC3339Calendar cal) {
 		OAuthRequest request = new OAuthRequest(Verb.GET, CALENDAR_API_URL + CALENDAR_ID + "/events");
 		request.addQuerystringParameter("orderBy", "startTime");
 		request.addQuerystringParameter("singleEvents", "true");
-		RFC3339Calendar cal = new RFC3339Calendar();
+		cal.add(Calendar.DAY_OF_MONTH, 1);
 		request.addQuerystringParameter("timeMin", cal.getRFC3339Date());
 		request.addQuerystringParameter("maxResults", "" + n);
 		service.signRequest(accessToken, request);
