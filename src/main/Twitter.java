@@ -53,6 +53,10 @@ public class Twitter {
 		twitter.updateStatus(update);
 	}
 	
+//	public void sendDm() {
+//		
+//	}
+	
 	public void getTimeline() throws TwitterException {
 		List<Status> statuses = twitter.getHomeTimeline();
 		for (Status status : statuses) {
@@ -74,9 +78,6 @@ public class Twitter {
 		List<DirectMessage> dms = twitter.getDirectMessages(page);
 		
 		return dms;
-//		for(DirectMessage dm : dms) {
-//			System.out.println(dm.getSender().getScreenName() + ": " + dm.getText() + "\n\t" + dm.getId());
-//		}
 	}
 	
 }

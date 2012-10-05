@@ -8,6 +8,7 @@ import java.util.Properties;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.builder.api.GoogleApi;
 import org.scribe.model.OAuthRequest;
+import org.scribe.model.Parameter;
 import org.scribe.model.Response;
 import org.scribe.model.Token;
 import org.scribe.model.Verb;
@@ -27,6 +28,7 @@ public class GoogleCalendar {
 //	private static final String AUTHORIZE_URL = "https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token=";
 	private static final String GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar";
 	private static final String CALENDAR_ID = "1frkkepse5l79agfi5vg8q2te0@group.calendar.google.com"; // Geburtstage
+//	private static final String CALENDAR_ID = "82mh530edinflthpb0suvuen74@group.calendar.google.com"; // Test-Kalender
 	private static final String CALENDAR_API_URL = "https://www.googleapis.com/calendar/v3/calendars/";
 	
 	private Properties prop;
@@ -99,6 +101,28 @@ public class GoogleCalendar {
 //		System.out.println(obj.getJSONObject("start").getString("date"));
 //		obj.getTimestamp("updated");
 		return arr;
+	}
+	
+	public void insertEvent(RFC3339Calendar cal, String summary) {
+		OAuthRequest request = new OAuthRequest(Verb.POST, CALENDAR_API_URL + CALENDAR_ID + "/events");
+		JSONObject event = new JSONObject();
+		JSONObject start = new JSONObject();
+		start.put("date", cal.getDate());
+		event.put("start", start);
+		cal.add(Calendar.DAY_OF_MONTH, 1);
+		JSONObject end = new JSONObject();
+		end.put("date", cal.getDate());
+		event.put("end", end);
+		event.put("summary", summary);
+		String[] recurrence = new String[1];
+		recurrence[0] = "RRULE:FREQ=YEARLY";
+		event.put("recurrence", recurrence);
+		System.out.println(event.toJSONString());
+		request.addPayload(event.toJSONString());
+		request.addHeader("Content-Type", "application/json");
+		service.signRequest(accessToken, request);
+		Response response = request.send();
+		System.out.println(response.getCode() + "\n" + response.getBody());
 	}
 	
 	

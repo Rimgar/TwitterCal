@@ -4,6 +4,7 @@
 package main;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Properties;
 
 import com.alibaba.fastjson.JSONArray;
 
+import twitter4j.DirectMessage;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 
@@ -60,6 +62,7 @@ public class TwitterCal {
 		cal = new GoogleCalendar(prop);
 		
 		processMentions();
+		processDms();
 		
 		if(! now.getDate().equals(prop.getProperty("now"))) {
 			today(null);
@@ -69,12 +72,10 @@ public class TwitterCal {
 	
 	public static void processMentions() throws TwitterException, IOException {
 		List<Status> mentions = twitter.getMentions();
-//		prop.setProperty("twitter.readMentionsId", mentions.get(0).getId() + "");
-//		prop.store(new FileOutputStream(propertiesPath), "");
+		long authUserId = Long.parseLong(prop.getProperty("twitter.user"));
 		
 		for (int i = mentions.size() - 1; i >= 0; i--) {
 			Status status = mentions.get(i);
-			long authUserId = Long.parseLong(prop.getProperty("twitter.user"));
 			if(status.getUser().getId() == authUserId && status.getText().startsWith("@" + twitter.getTwitter().getScreenName() + " ")) {
 				String[] words = status.getText().split(" ");
 				if(words.length > 1) {
@@ -95,6 +96,29 @@ public class TwitterCal {
 				}
 			}
 			prop.setProperty("twitter.readMentionsId", status.getId() + "");
+		}
+		prop.store(new FileOutputStream(propertiesPath), "");
+	}
+	
+	public static void processDms() throws TwitterException, IOException {
+		List<DirectMessage> dms = twitter.getDMs();
+		long authUserId = Long.parseLong(prop.getProperty("twitter.user"));
+		
+		for (int i = dms.size() - 1; i >= 0; i--) {
+			DirectMessage dm = dms.get(i);
+			if(dm.getSenderId() == authUserId) {
+				String[] words = dm.getText().split(" ");
+				if(words.length > 2) {
+					if(words[0].equals("add")) {
+						if(words[1].matches("\\d{4}-\\d{2}-\\d{2}")) {
+							String summary = dm.getText().replaceFirst("^\\s*add\\s*\\d{4}-\\d{2}-\\d{2}\\s*", "");
+							summary += " ('" + words[1].substring(2, 4) + ")";
+							cal.insertEvent(RFC3339Calendar.parseDate(words[1]), summary);
+						}
+					}
+				}
+			}
+			prop.setProperty("twitter.readDmId", dm.getId() + "");
 		}
 		prop.store(new FileOutputStream(propertiesPath), "");
 	}
