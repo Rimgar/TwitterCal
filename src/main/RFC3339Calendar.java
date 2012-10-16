@@ -26,7 +26,7 @@ public class RFC3339Calendar extends GregorianCalendar {
 	}
 	
 	public RFC3339Calendar(int year, int month, int dayOfMonth, int hourOfDay, int minute, int second) {
-//		super(year, month, dayOfMonth, hourOfDay, minute, second);
+		super(year, month, dayOfMonth, hourOfDay, minute, second);
 	}
 	
 	public String toString() {
@@ -59,5 +59,12 @@ public class RFC3339Calendar extends GregorianCalendar {
 		DecimalFormat df = new DecimalFormat("00");
 		return df.format(i);
 	}
+
+	@Override
+	public RFC3339Calendar clone() {
+		return (RFC3339Calendar) super.clone();
+	}
+	
+	
 
 }

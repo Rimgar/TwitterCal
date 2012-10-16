@@ -4,13 +4,16 @@
 package main;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 import twitter4j.DirectMessage;
 import twitter4j.Status;
@@ -23,11 +26,13 @@ import twitter4j.TwitterException;
 public class TwitterCal {
 	
 	private static final String propertiesPath = "settings.properties";
+	public static final String loggerPath = "TwitterCal.log";
 	
 	private static Twitter twitter;
 	private static GoogleCalendar cal;
 	private static Properties prop;
 	public static RFC3339Calendar now;
+	public static Logger log;
 
 	/**
 	 * @param args
@@ -42,9 +47,11 @@ public class TwitterCal {
 //		prop.setProperty("TAccessTokenSecret", "7890");
 //		prop.list(System.out);
 //		prop.store(new FileOutputStream("settings.properties"), "");
+//		System.out.println(new File(propertiesPath).getAbsolutePath());
 		prop.load(new FileInputStream(propertiesPath));
 
-		
+		log = Logger.getLogger("TwitterCal");
+//		log.addHandler(new FileHandler(loggerPath, true));
 		
 //		JSONArray arr = cal.getTodaysEvents();
 //		if(arr != null) {
@@ -76,24 +83,39 @@ public class TwitterCal {
 		
 		for (int i = mentions.size() - 1; i >= 0; i--) {
 			Status status = mentions.get(i);
-			if(status.getUser().getId() == authUserId && status.getText().startsWith("@" + twitter.getTwitter().getScreenName() + " ")) {
-				String[] words = status.getText().split(" ");
-				if(words.length > 1) {
-					if(words[1].equals("today")) {
-						today(status);
-					} else if(words[1].equals("next")) {
-						JSONArray arr = cal.getEventsAfter((RFC3339Calendar) now.clone());
-						buildTweets("", arr, status);
-					} else if(words[1].equals("on")) {
-						JSONArray arr = cal.getEventsOnDate(RFC3339Calendar.parseDate(words[2]));
-						buildTweets(words[2] + ":", arr, status);
-					} else if(words[1].equals("after")) {
-						JSONArray arr = cal.getEventsAfter(RFC3339Calendar.parseDate(words[2]));
-						buildTweets("", arr, status);
-					} else if(words[1].equals("when")) {
-						
+			try {
+				if(status.getUser().getId() == authUserId && status.getText().startsWith("@" + twitter.getTwitter().getScreenName() + " ")) {
+					String[] words = status.getText().split(" ");
+					if(words.length > 1) {
+						if(words[1].equals("today")) {
+							today(status);
+						} else if(words[1].equals("next")) {
+							JSONArray arr = cal.getEventsAfter(now.clone());
+							buildTweets("", arr, status);
+						} else if(words[1].equals("on")) {
+							JSONArray arr = cal.getEventsOnDate(RFC3339Calendar.parseDate(words[2]));
+							buildTweets(words[2] + ":", arr, status);
+						} else if(words[1].equals("after")) {
+							JSONArray arr = cal.getEventsAfter(RFC3339Calendar.parseDate(words[2]));
+							buildTweets("", arr, status);
+						} else if(words[1].equals("when")) {
+							String name = status.getText().replaceFirst("@\\S* when\\s+", "").toLowerCase();
+							RFC3339Calendar end = now.clone();
+							end.add(Calendar.YEAR, 1);
+							JSONArray arr = cal.getEventsBetween(now, end);
+							for(int j = 0; j < arr.size(); j++) {
+								JSONObject obj = arr.getJSONObject(j);
+								if(obj.getString("summary").toLowerCase().contains(name)) {
+									JSONArray tweet = new JSONArray();
+									tweet.add(obj);
+									buildTweets("", tweet, status);
+								}
+							}
+						}
 					}
 				}
+			} catch(Exception e) {
+				log.log(Level.SEVERE, status.getId() + ": " + status.getText(), e);
 			}
 			prop.setProperty("twitter.readMentionsId", status.getId() + "");
 		}
